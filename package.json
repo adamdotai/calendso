@@ -26,6 +26,7 @@
     "yarn": ">=1.19.0 < 2.0.0"
   },
   "dependencies": {
+    "@adamdotai/design-system": "6.1.0",
     "@headlessui/react": "^1.4.1",
     "@heroicons/react": "^1.0.4",
     "@hookform/resolvers": "^2.8.1",

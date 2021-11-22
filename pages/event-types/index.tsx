@@ -1,53 +1,43 @@
-// TODO: replace headlessui with radix-ui
-import { Menu, Transition } from "@headlessui/react";
 import {
-  ChevronDownIcon,
-  DotsHorizontalIcon,
-  ExternalLinkIcon,
-  LinkIcon,
-  PlusIcon,
-  UsersIcon,
-} from "@heroicons/react/solid";
-import { SchedulingType } from "@prisma/client";
+  Avatar,
+  Box,
+  Divider,
+  Flex,
+  SimpleGrid,
+  Text,
+  VStack,
+  IconButton,
+  CopyIcon,
+  BaseLink,
+  MoreOptionsIcon,
+  Dropdown,
+  Switch,
+  Tooltip,
+  HStack,
+  Button,
+  AddIcon,
+  Icon,
+} from "@adamdotai/design-system";
+import { UsersIcon } from "@heroicons/react/solid";
 import { Prisma } from "@prisma/client";
 import dayjs from "dayjs";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import React, { Fragment, useRef } from "react";
-import { useMutation } from "react-query";
+import React, { Fragment } from "react";
 
-import { asStringOrNull } from "@lib/asStringOrNull";
 import { getSession } from "@lib/auth";
-import classNames from "@lib/classNames";
-import { HttpError } from "@lib/core/http/error";
 import { extractLocaleInfo } from "@lib/core/i18n/i18n.utils";
 import { ONBOARDING_INTRODUCED_AT } from "@lib/getting-started";
 import { useLocale } from "@lib/hooks/useLocale";
-import { useToggleQuery } from "@lib/hooks/useToggleQuery";
-import createEventType from "@lib/mutations/event-types/create-event-type";
-import showToast from "@lib/notification";
 import prisma from "@lib/prisma";
 import { inferSSRProps } from "@lib/types/inferSSRProps";
 
-import { Dialog, DialogClose, DialogContent } from "@components/Dialog";
 import Shell from "@components/Shell";
-import { Tooltip } from "@components/Tooltip";
 import EventTypeDescription from "@components/eventtype/EventTypeDescription";
 import { Alert } from "@components/ui/Alert";
-import Avatar from "@components/ui/Avatar";
-import AvatarGroup from "@components/ui/AvatarGroup";
 import Badge from "@components/ui/Badge";
-import { Button } from "@components/ui/Button";
-import Dropdown, {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@components/ui/Dropdown";
-import * as RadioArea from "@components/ui/form/radio-area";
 import UserCalendarIllustration from "@components/ui/svg/UserCalendarIllustration";
 
 type PageProps = inferSSRProps<typeof getServerSideProps>;
@@ -56,6 +46,8 @@ type Profile = PageProps["profiles"][number];
 type MembershipCount = EventType["metadata"]["membershipCount"];
 
 const EventTypesPage = (props: PageProps) => {
+  const router = useRouter();
+
   const { locale } = useLocale({
     localeProp: props.localeProp,
     namespaces: "event-types-page",
@@ -126,161 +118,78 @@ const EventTypesPage = (props: PageProps) => {
   );
 
   const EventTypeList = ({
-    readOnly,
-    types,
     profile,
+    types,
   }: {
     profile: PageProps["profiles"][number];
     readOnly: boolean;
     types: EventType["eventTypes"];
-  }) => (
-    <div className="mb-16 -mx-4 overflow-hidden bg-white border border-gray-200 rounded-sm sm:mx-0">
-      <ul className="divide-y divide-neutral-200" data-testid="event-types">
-        {types.map((type) => (
-          <li
-            key={type.id}
-            className={classNames(
-              type.$disabled && "opacity-30 cursor-not-allowed pointer-events-none select-none"
-            )}
-            data-disabled={type.$disabled ? 1 : 0}>
-            <div
-              className={classNames(
-                "hover:bg-neutral-50 flex justify-between items-center ",
-                type.$disabled && "pointer-events-none"
-              )}>
-              <div className="flex items-center w-full justify-between px-4 py-4 sm:px-6 hover:bg-neutral-50">
-                <Link href={"/event-types/" + type.id}>
-                  <a className="flex-grow text-sm truncate">
-                    <div>
-                      <span className="font-medium truncate text-neutral-900">{type.title}</span>
-                      {type.hidden && (
-                        <span className="ml-2 inline items-center px-1.5 py-0.5 rounded-sm text-xs font-medium bg-yellow-100 text-yellow-800">
-                          Hidden
-                        </span>
-                      )}
-                      {readOnly && (
-                        <span className="ml-2 inline items-center px-1.5 py-0.5 rounded-sm text-xs font-medium bg-gray-100 text-gray-800">
-                          Readonly
-                        </span>
-                      )}
-                    </div>
+  }) => {
+    return (
+      <Box mb={4}>
+        <SimpleGrid as="ul" columns={[1, 2, 3]} gap={6} data-testid="event-types">
+          {types.map((type) => (
+            <Box
+              as="li"
+              bg="white"
+              boxShadow="sm"
+              p={4}
+              pb={6}
+              key={type.id}
+              data-disabled={type.$disabled ? 1 : 0}>
+              <VStack spacing={4} align="stretch">
+                <Flex justify="space-between">
+                  <Box>
+                    <Text fontWeight="semibold">{type.title}</Text>
                     <EventTypeDescription eventType={type} />
-                  </a>
-                </Link>
+                  </Box>
+                  <Box>
+                    <Dropdown>
+                      <Dropdown.Button>
+                        <IconButton aria-label="More options" icon={<MoreOptionsIcon />} />
+                      </Dropdown.Button>
+                      <Dropdown.List>
+                        <Dropdown.Item>
+                          <Link href={"/event-types/" + type.id}>Edit</Link>
+                        </Dropdown.Item>
+                        <Dropdown.Item>Duplicate</Dropdown.Item>
+                        <Dropdown.Item>Delete</Dropdown.Item>
+                        <Dropdown.Item>
+                          <Switch /> Turn Off
+                        </Dropdown.Item>
+                      </Dropdown.List>
+                    </Dropdown>
+                  </Box>
+                </Flex>
 
-                <div className="flex-shrink-0 hidden mt-4 sm:flex sm:mt-0 sm:ml-5">
-                  <div className="flex items-center space-x-5 overflow-hidden">
-                    {type.users?.length > 1 && (
-                      <AvatarGroup
-                        size={8}
-                        truncateAfter={4}
-                        items={type.users.map((organizer) => ({
-                          alt: organizer.name || "",
-                          image: organizer.avatar || "",
-                        }))}
-                      />
-                    )}
-                    <Tooltip content="Preview">
-                      <a
-                        href={`${process.env.NEXT_PUBLIC_APP_URL}/${profile.slug}/${type.slug}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-2 border border-transparent cursor-pointer group text-neutral-400 hover:border-gray-200">
-                        <ExternalLinkIcon className="w-5 h-5 group-hover:text-black" />
-                      </a>
-                    </Tooltip>
+                <Divider />
 
-                    <Tooltip content="Copy link">
-                      <button
+                <VStack spacing={5} align="stretch">
+                  <Avatar />
+                  <Flex justify="space-between">
+                    <Link passHref href={`${process.env.NEXT_PUBLIC_APP_URL}/${profile.slug}/${type.slug}`}>
+                      <BaseLink>View booking page</BaseLink>
+                    </Link>
+                    <Tooltip label="Copy link">
+                      <IconButton
                         onClick={() => {
-                          showToast("Link copied!", "success");
                           navigator.clipboard.writeText(
                             `${process.env.NEXT_PUBLIC_APP_URL}/${profile.slug}/${type.slug}`
                           );
                         }}
-                        className="p-2 border border-transparent group text-neutral-400 hover:border-gray-200">
-                        <LinkIcon className="w-5 h-5 group-hover:text-black" />
-                      </button>
+                        aria-label="Copy link"
+                        icon={<CopyIcon />}
+                      />
                     </Tooltip>
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-shrink-0 mr-5 sm:hidden">
-                <Menu as="div" className="inline-block text-left">
-                  {({ open }) => (
-                    <>
-                      <div>
-                        <Menu.Button className="p-2 mt-1 border border-transparent text-neutral-400 hover:border-gray-200">
-                          <span className="sr-only">Open options</span>
-                          <DotsHorizontalIcon className="w-5 h-5" aria-hidden="true" />
-                        </Menu.Button>
-                      </div>
-
-                      <Transition
-                        show={open}
-                        as={Fragment}
-                        enter="transition ease-out duration-100"
-                        enterFrom="transform opacity-0 scale-95"
-                        enterTo="transform opacity-100 scale-100"
-                        leave="transition ease-in duration-75"
-                        leaveFrom="transform opacity-100 scale-100"
-                        leaveTo="transform opacity-0 scale-95">
-                        <Menu.Items
-                          static
-                          className="absolute z-10 right-0 w-56 mt-2 origin-top-right bg-white divide-y rounded-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none divide-neutral-100">
-                          <div className="py-1">
-                            <Menu.Item>
-                              {({ active }) => (
-                                <a
-                                  href={`${process.env.NEXT_PUBLIC_APP_URL}/${profile.slug}/${type.slug}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className={classNames(
-                                    active ? "bg-neutral-100 text-neutral-900" : "text-neutral-700",
-                                    "group flex items-center px-4 py-2 text-sm font-medium"
-                                  )}>
-                                  <ExternalLinkIcon
-                                    className="w-4 h-4 mr-3 text-neutral-400 group-hover:text-neutral-500"
-                                    aria-hidden="true"
-                                  />
-                                  Preview
-                                </a>
-                              )}
-                            </Menu.Item>
-                            <Menu.Item>
-                              {({ active }) => (
-                                <button
-                                  onClick={() => {
-                                    showToast("Link copied!", "success");
-                                    navigator.clipboard.writeText(
-                                      `${process.env.NEXT_PUBLIC_APP_URL}/${profile.slug}/${type.slug}`
-                                    );
-                                  }}
-                                  className={classNames(
-                                    active ? "bg-neutral-100 text-neutral-900" : "text-neutral-700",
-                                    "group flex items-center px-4 py-2 text-sm w-full font-medium"
-                                  )}>
-                                  <LinkIcon
-                                    className="w-4 h-4 mr-3 text-neutral-400 group-hover:text-neutral-500"
-                                    aria-hidden="true"
-                                  />
-                                  Copy link to event
-                                </button>
-                              )}
-                            </Menu.Item>
-                          </div>
-                        </Menu.Items>
-                      </Transition>
-                    </>
-                  )}
-                </Menu>
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+                  </Flex>
+                </VStack>
+              </VStack>
+            </Box>
+          ))}
+        </SimpleGrid>
+      </Box>
+    );
+  };
 
   return (
     <div>
@@ -288,48 +197,61 @@ const EventTypesPage = (props: PageProps) => {
         <title>Event Types | Cal.com</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <Shell
-        heading="Event Types"
-        subtitle="Create events to share for people to book on your calendar."
-        CTA={
-          props.eventTypes.length !== 0 && (
-            <CreateNewEventDialog canAddEvents={props.canAddEvents} profiles={props.profiles} />
-          )
-        }>
-        {props.user.plan === "FREE" && !props.canAddEvents && (
-          <Alert
-            severity="warning"
-            title={<>You need to upgrade your plan to have more than one active event type.</>}
-            message={
-              <>
-                To upgrade go to{" "}
-                <a href={"https://cal.com/upgrade"} className="underline">
-                  {"https://cal.com/upgrade"}
-                </a>
-              </>
-            }
-            className="my-4"
-          />
-        )}
-        {props.eventTypes &&
-          props.eventTypes.map((input) => (
-            <Fragment key={input.profile?.slug}>
-              {/* hide list heading when there is only one (current user) */}
-              {(props.eventTypes.length !== 1 || input.teamId) && (
-                <EventTypeListHeading
-                  profile={input.profile}
-                  membershipCount={input.metadata?.membershipCount}
-                />
-              )}
-              <EventTypeList
-                types={input.eventTypes}
-                profile={input.profile}
-                readOnly={input.metadata?.readOnly}
-              />
-            </Fragment>
-          ))}
 
-        {props.eventTypes.length === 0 && <CreateFirstEventTypeView />}
+      <Shell>
+        <VStack spacing={6} align="stretch">
+          <HStack justify="space-between">
+            <HStack>
+              <Avatar />
+              <Link
+                href={`${process.env.NEXT_PUBLIC_APP_URL}/${
+                  router.query.eventPage || props.profiles[0].slug
+                }`}
+                passHref>
+                <BaseLink>
+                  {process.env.NEXT_PUBLIC_APP_URL}/{router.query.eventPage || props.profiles[0].slug}/
+                </BaseLink>
+              </Link>
+            </HStack>
+            {props.eventTypes.length !== 0 && (
+              <CreateNewEventDialog canAddEvents={props.canAddEvents} profiles={props.profiles} />
+            )}
+          </HStack>
+          {props.user.plan === "FREE" && !props.canAddEvents && (
+            <Alert
+              severity="warning"
+              title={<>You need to upgrade your plan to have more than one active event type.</>}
+              message={
+                <>
+                  To upgrade go to{" "}
+                  <a href={"https://cal.com/upgrade"} className="underline">
+                    {"https://cal.com/upgrade"}
+                  </a>
+                </>
+              }
+              className="my-4"
+            />
+          )}
+          {props.eventTypes &&
+            props.eventTypes.map((input) => (
+              <Fragment key={input.profile?.slug}>
+                {/* hide list heading when there is only one (current user) */}
+                {(props.eventTypes.length !== 1 || input.teamId) && (
+                  <EventTypeListHeading
+                    profile={input.profile}
+                    membershipCount={input.metadata?.membershipCount}
+                  />
+                )}
+                <EventTypeList
+                  types={input.eventTypes}
+                  profile={input.profile}
+                  readOnly={input.metadata?.readOnly}
+                />
+              </Fragment>
+            ))}
+
+          {props.eventTypes.length === 0 && <CreateFirstEventTypeView />}
+        </VStack>
       </Shell>
     </div>
   );
@@ -344,219 +266,26 @@ const CreateNewEventDialog = ({
   canAddEvents: boolean;
   localeProp: string;
 }) => {
-  const router = useRouter();
-  const teamId: number | null = Number(router.query.teamId) || null;
-  const modalOpen = useToggleQuery("new");
   const { t } = useLocale({ localeProp });
 
-  const createMutation = useMutation(createEventType, {
-    onSuccess: async ({ eventType }) => {
-      await router.push("/event-types/" + eventType.id);
-      showToast(`${eventType.title} event type created successfully`, "success");
-    },
-    onError: (err: HttpError) => {
-      const message = `${err.statusCode}: ${err.message}`;
-      showToast(message, "error");
-    },
-  });
-
-  const slugRef = useRef<HTMLInputElement>(null);
-
   return (
-    <Dialog
-      open={modalOpen.isOn}
-      onOpenChange={(isOpen) => {
-        router.push(isOpen ? modalOpen.hrefOn : modalOpen.hrefOff);
-      }}>
-      {!profiles.filter((profile) => profile.teamId).length && (
-        <Button
-          data-testid="new-event-type"
-          {...(canAddEvents
-            ? {
-                href: modalOpen.hrefOn,
-              }
-            : {
-                disabled: true,
-              })}
-          StartIcon={PlusIcon}>
-          {t("new-event-type-btn")}
-        </Button>
-      )}
-      {profiles.filter((profile) => profile.teamId).length > 0 && (
-        <Dropdown>
-          <DropdownMenuTrigger asChild>
-            <Button EndIcon={ChevronDownIcon}>{t("new-event-type-btn")}</Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Create an event type under your name or a team.</DropdownMenuLabel>
-            <DropdownMenuSeparator className="h-px bg-gray-200" />
-            {profiles.map((profile) => (
-              <DropdownMenuItem
-                key={profile.slug}
-                className="px-3 py-2 cursor-pointer hover:bg-neutral-100 focus:outline-none"
-                onSelect={() =>
-                  router.push({
-                    pathname: router.pathname,
-                    query: {
-                      ...router.query,
-                      new: "1",
-                      eventPage: profile.slug,
-                      ...(profile.teamId
-                        ? {
-                            teamId: profile.teamId,
-                          }
-                        : {}),
-                    },
-                  })
-                }>
-                <Avatar
-                  displayName={profile.name}
-                  imageSrc={profile.image}
-                  size={6}
-                  className="inline mr-2"
-                />
-                {profile.name ? profile.name : profile.slug}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </Dropdown>
-      )}
-      <DialogContent>
-        <div className="mb-8">
-          <h3 className="text-lg font-bold leading-6 text-gray-900" id="modal-title">
-            Add a new {teamId ? "team " : ""}event type
-          </h3>
-          <div>
-            <p className="text-sm text-gray-500">Create a new event type for people to book times with.</p>
-          </div>
-        </div>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-
-            const target = e.target as unknown as Record<
-              "title" | "slug" | "description" | "length" | "schedulingType",
-              { value: string }
-            >;
-
-            const payload = {
-              title: target.title.value,
-              slug: target.slug.value,
-              description: target.description.value,
-              length: parseInt(target.length.value),
-            };
-
-            if (router.query.teamId) {
-              payload.teamId = parseInt(asStringOrNull(router.query.teamId), 10);
-              payload.schedulingType = target.schedulingType.value;
-            }
-
-            createMutation.mutate(payload);
-          }}>
-          <div>
-            <div className="mb-4">
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                Title
-              </label>
-              <div className="mt-1">
-                <input
-                  onChange={(e) => {
-                    if (!slugRef.current) {
-                      return;
-                    }
-                    slugRef.current.value = e.target.value.replace(/\s+/g, "-").toLowerCase();
-                  }}
-                  type="text"
-                  name="title"
-                  id="title"
-                  required
-                  className="block w-full border-gray-300 rounded-sm shadow-sm focus:ring-neutral-900 focus:border-neutral-900 sm:text-sm"
-                  placeholder="Quick Chat"
-                />
-              </div>
-            </div>
-            <div className="mb-4">
-              <label htmlFor="slug" className="block text-sm font-medium text-gray-700">
-                URL
-              </label>
-              <div className="mt-1">
-                <div className="flex rounded-sm shadow-sm">
-                  <span className="inline-flex items-center px-3 text-gray-500 border border-r-0 border-gray-300 rounded-l-md bg-gray-50 sm:text-sm">
-                    {process.env.NEXT_PUBLIC_APP_URL}/{router.query.eventPage || profiles[0].slug}/
-                  </span>
-                  <input
-                    ref={slugRef}
-                    type="text"
-                    name="slug"
-                    id="slug"
-                    required
-                    className="flex-1 block w-full min-w-0 border-gray-300 rounded-none focus:ring-neutral-900 focus:border-neutral-900 rounded-r-md sm:text-sm"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="mb-4">
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <div className="mt-1">
-                <textarea
-                  name="description"
-                  id="description"
-                  className="block w-full border-gray-300 rounded-sm shadow-sm focus:ring-neutral-900 focus:border-neutral-900 sm:text-sm"
-                  placeholder="A quick video meeting."
-                />
-              </div>
-            </div>
-            <div className="mb-4">
-              <label htmlFor="length" className="block text-sm font-medium text-gray-700">
-                Length
-              </label>
-              <div className="relative mt-1 rounded-sm shadow-sm">
-                <input
-                  type="number"
-                  name="length"
-                  id="length"
-                  required
-                  className="block w-full pr-20 border-gray-300 rounded-sm focus:ring-neutral-900 focus:border-neutral-900 sm:text-sm"
-                  placeholder="15"
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-gray-400">
-                  minutes
-                </div>
-              </div>
-            </div>
-          </div>
-          {teamId && (
-            <div className="mb-4">
-              <label htmlFor="schedulingType" className="block text-sm font-medium text-gray-700">
-                Scheduling Type
-              </label>
-              <RadioArea.Group
-                name="schedulingType"
-                className="relative flex mt-1 space-x-6 rounded-sm shadow-sm">
-                <RadioArea.Item value={SchedulingType.COLLECTIVE} className="w-1/2 text-sm">
-                  <strong className="block mb-1">Collective</strong>
-                  <p>Schedule meetings when all selected team members are available.</p>
-                </RadioArea.Item>
-                <RadioArea.Item value={SchedulingType.ROUND_ROBIN} className="w-1/2 text-sm">
-                  <strong className="block mb-1">Round Robin</strong>
-                  <p>Cycle meetings between multiple team members.</p>
-                </RadioArea.Item>
-              </RadioArea.Group>
-            </div>
-          )}
-          <div className="mt-8 sm:flex sm:flex-row-reverse gap-x-2">
-            <Button type="submit" loading={createMutation.isLoading}>
-              Continue
-            </Button>
-            <DialogClose asChild>
-              <Button color="secondary">Cancel</Button>
-            </DialogClose>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+    !profiles.filter((profile) => profile.teamId).length && (
+      <Dropdown>
+        <Dropdown.Button>
+          <Button
+            variant="outline"
+            data-testid="new-event-type"
+            startIcon={<Icon as={AddIcon} />}
+            disabled={!canAddEvents}>
+            {t("new-event-type-btn")}
+          </Button>
+        </Dropdown.Button>
+        <Dropdown.List>
+          <Dropdown.Item>One-on-One booking</Dropdown.Item>
+          <Dropdown.Item>Group booking</Dropdown.Item>
+        </Dropdown.List>
+      </Dropdown>
+    )
   );
 };
 
